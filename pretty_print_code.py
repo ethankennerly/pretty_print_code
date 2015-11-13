@@ -58,7 +58,8 @@ var after;
 var here;
 """
 
-_test_expected = """
+
+_test_text_expected = """
 {
     var a;
 }
@@ -86,6 +87,40 @@ var after;
 var here;
 """
 
+
+_test_multiple_comments_on_one_line = """
+/** this */
+multiple_comments_on_one_line 
+{
+  /**/ import flash.display.MovieClip /**/
+  public class
+  {
+      /**/ private var level:int /**/
+      private function getLevel():int   
+      {
+        return level;
+      }
+  }
+}
+"""
+
+_test_multiple_comments_on_one_line_expected = """
+/** this */
+multiple_comments_on_one_line
+{
+    /**/ import flash.display.MovieClip /**/
+    public class
+    {
+        /**/ private var level:int /**/
+        private function getLevel():int
+        {
+            return level;
+        }
+    }
+}
+"""
+
+
 def _test_diff(expected, got):
     gots = got.splitlines()
     expecteds = expected.splitlines()
@@ -98,8 +133,11 @@ def _test_diff(expected, got):
 def format_text(text):
     """
     >>> got = format_text(_test_text) 
-    >>> if _test_expected != got:
-    ...    _test_diff(_test_expected, got)
+    >>> _test_diff(_test_text_expected, got)
+
+    Multiple comments on one line.
+    >>> got = format_text(_test_multiple_comments_on_one_line) 
+    >>> _test_diff(_test_multiple_comments_on_one_line_expected, got)
     """
     lines = text.splitlines()
     is_comment = False
@@ -120,8 +158,10 @@ def format_text(text):
             indent_count += 1
         if comment_begin in line:
             is_comment = True
-        if comment_end in line.split(comment_begin)[0]:
-            is_comment = False
+        comments = line.split(comment_begin)
+        for a_comment in comments:
+            if comment_end in a_comment:
+                is_comment = False
     return line_separator.join(formatted_lines)
 
 
