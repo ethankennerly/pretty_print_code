@@ -11,12 +11,15 @@ package
          */
         public function f(){
             var d = {a: 1};
-            if (d.a == 1) {
+            d["a"] = 2;
+            if (d["a"] == 1) {
                 trace("1");
             }
             else {
                 trace("Not 1");
             }
+            d = {a: {b: {
+                        c: 0}}};
         }
     }
 }

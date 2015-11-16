@@ -25,9 +25,10 @@ comment_continue = '*'
 comment_continue_prefix = ' '
 comment_end = '*/'
 indent = '    '
-indent_begin = '{'
-indent_end = '}'
+indent_begins = ['{', '[']
+indent_ends = ['}', ']']
 line_separator = '\n'
+ignore = ';'
 
 
 _test_text = """
@@ -90,7 +91,7 @@ var here;
 
 _test_multiple_comments_on_one_line = """
 /** this */
-multiple_comments_on_one_line 
+package multiple_comments_on_one_line 
 {
   /**/ import flash.display.MovieClip /**/
   public class
@@ -106,7 +107,7 @@ multiple_comments_on_one_line
 
 _test_multiple_comments_on_one_line_expected = """
 /** this */
-multiple_comments_on_one_line
+package multiple_comments_on_one_line
 {
     /**/ import flash.display.MovieClip /**/
     public class
@@ -121,9 +122,64 @@ multiple_comments_on_one_line
 """
 
 
+_test_indented_variables = """
+/** this */
+package indented_variables
+{
+  /**/ import flash.display.MovieClip /**/
+  public class
+  {
+     public var objects:Object = {}
+
+        public var empties:Array = [];
+
+      public var oneline:Object = {a: 1, b: 2}
+      /**
+      * Comment
+      */
+      public var items:Object = {1: 10,
+      2: 20};
+        // Comment
+      public var levels:Array = [
+        1,
+        2];
+     public var level:int = 0;
+  }
+}
+"""
+
+_test_indented_variables_expected = """
+/** this */
+package indented_variables
+{
+    /**/ import flash.display.MovieClip /**/
+    public class
+    {
+        public var objects:Object = {}
+        
+        public var empties:Array = [];
+        
+        public var oneline:Object = {a: 1, b: 2}
+        /**
+         * Comment
+         */
+        public var items:Object = {1: 10,
+            2: 20};
+        // Comment
+        public var levels:Array = [
+            1,
+            2];
+        public var level:int = 0;
+    }
+}
+"""
+
+
 def _test_diff(expected, got):
     gots = got.splitlines()
     expecteds = expected.splitlines()
+    if len(expecteds) != len(gots):
+        print expected
     for expected, got in zip(expecteds, gots):
         if expected != got:
             print "- %r" % expected
@@ -138,24 +194,41 @@ def format_text(text):
     Multiple comments on one line.
     >>> got = format_text(_test_multiple_comments_on_one_line) 
     >>> _test_diff(_test_multiple_comments_on_one_line_expected, got)
+
+    Indented variables.
+    >>> got = format_text(_test_indented_variables) 
+    >>> _test_diff(_test_indented_variables_expected, got)
     """
     lines = text.splitlines()
     is_comment = False
     indent_count = 0
     formatted_lines = []
     for line in lines:
-        active = line.split(comment)[0].strip()
+        active = line.replace(ignore, '').split(comment)[0].strip()
         active = active.split(comment_begin)[0].strip()
-        if active.startswith(indent_end) and not is_comment:
-            indent_count -= 1
+        is_dedent = False
+        if not is_comment:
+            for indent_end in indent_ends:
+                if active.startswith(indent_end):
+                    indent_count -= 1
+                    is_dedent = True
+                    break
         indent_count = max(0, indent_count)
         prefix = indent * indent_count
         if is_comment and active.startswith(comment_continue.strip()):
             prefix += ' '
         formatted = prefix + line.strip()
         formatted_lines.append(formatted)
-        if active.endswith(indent_begin) and not is_comment:
-            indent_count += 1
+        is_indent = False
+        if not is_comment:
+            for indent_begin in indent_begins:
+                if indent_begin in active:
+                    indent_count += active.count(indent_begin)
+                    is_indent = True
+            if not is_dedent:
+                for indent_end in indent_ends:
+                    if indent_end in active:
+                        indent_count -= active.count(indent_end)
         if comment_begin in line:
             is_comment = True
         comments = line.split(comment_begin)
@@ -176,6 +249,7 @@ def format_files(paths, is_dry_run = False):
     Overwrite file in-place.  Normalizes line-endings.
     >>> path = realpath('pretty_print_code_test.as')
     >>> expected = open(path).read()
+    >>> open(path, 'w').write('    ' + expected + '    ')
     >>> format_files([path])
     >>> got = open(path).read()
     >>> if expected != got:
@@ -185,11 +259,11 @@ def format_files(paths, is_dry_run = False):
         file = open(path, 'rU')
         text = file.read()
         text = format_text(text)
-	if is_dry_run:
-        	print text
-	else:
-		file = open(path, 'wb')
-		file.write(text)
+        if is_dry_run:
+            print text
+        else:
+            file = open(path, 'wb')
+            file.write(text)
 
 
 if __name__ == "__main__": 
