@@ -14,10 +14,10 @@ Characters to replace are at the top of the program.
 Running this program also unit tests a sample.
 """ 
 
-
-import os
-import sys
-
+from difflib import unified_diff
+from os import path
+from sys import argv
+from re import compile, sub
 
 comment = '//'
 comment_begin = '/*'
@@ -175,29 +175,40 @@ package indented_variables
 """
 
 
-def _test_diff(expected, got):
-    gots = got.splitlines()
-    expecteds = expected.splitlines()
-    if len(expecteds) != len(gots):
-        print expected
-    for expected, got in zip(expecteds, gots):
-        if expected != got:
-            print "- %r" % expected
-            print "+ %r" % got
+def format_difference(expected, got):
+    difference_lines = unified_diff(
+        expected.splitlines(),
+        got.splitlines()
+    )
+    difference = '\n'.join(difference_lines)
+    return difference
+
+
+def newline_after_braces(text):
+    indents = [indent_begins[0], indent_ends[0]]
+    for indent in indents:
+        trimmed = indent + line_separator
+        redundant = indent + line_separator + line_separator
+        text = text.replace(indent, trimmed)
+        text = text.replace(redundant, trimmed)
+    return text
 
 
 def format_text(text):
     """
     >>> got = format_text(_test_text) 
-    >>> _test_diff(_test_text_expected, got)
+    >>> print format_difference(_test_text_expected, got)
+    <BLANKLINE>
 
     Multiple comments on one line.
     >>> got = format_text(_test_multiple_comments_on_one_line) 
-    >>> _test_diff(_test_multiple_comments_on_one_line_expected, got)
+    >>> print format_difference(_test_multiple_comments_on_one_line_expected, got)
+    <BLANKLINE>
 
     Indented variables.
     >>> got = format_text(_test_indented_variables) 
-    >>> _test_diff(_test_indented_variables_expected, got)
+    >>> print format_difference(_test_indented_variables_expected, got)
+    <BLANKLINE>
     """
     lines = text.splitlines()
     is_comment = False
@@ -235,12 +246,27 @@ def format_text(text):
         for a_comment in comments:
             if comment_end in a_comment:
                 is_comment = False
-    return line_separator.join(formatted_lines)
+    text = line_separator.join(formatted_lines)
+    return text
+
+
+def format(text):
+    """
+    >>> got = format_text(_test_multiple_comments_on_one_line) 
+    >>> print format_difference(_test_multiple_comments_on_one_line_expected, got)
+    <BLANKLINE>
+    """
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
+    text = newline_after_braces(text)
+    text = format_text(text)
+    text = newline_after_braces(text)
+    text = text.strip()
+    return text
 
 
 def realpath(relative_path):
-    script_directory = os.path.dirname(__file__)
-    absolute_path = os.path.join(script_directory, relative_path)
+    script_directory = path.dirname(__file__)
+    absolute_path = path.join(script_directory, relative_path)
     return absolute_path
 
 
@@ -252,8 +278,8 @@ def format_files(paths, is_dry_run = False):
     >>> open(path, 'w').write('    ' + expected + '    ')
     >>> format_files([path])
     >>> got = open(path).read()
-    >>> if expected != got:
-    ...     _test_diff(expected, got)
+    >>> print format_difference(expected, got)
+    <BLANKLINE>
     """
     for path in paths:
         file = open(path, 'rU')
@@ -268,9 +294,9 @@ def format_files(paths, is_dry_run = False):
 
 if __name__ == "__main__": 
     import doctest
-    if len(sys.argv) < 2:
+    if len(argv) < 2:
         print __doc__
     else:
-        paths = sys.argv[1:]
+        paths = argv[1:]
         format_files(paths)
     doctest.testmod()
