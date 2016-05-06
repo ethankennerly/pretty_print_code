@@ -176,6 +176,8 @@ package indented_variables
 
 
 def format_difference(expected, got):
+    if got is None:
+        got = ''
     difference_lines = unified_diff(
         expected.splitlines(),
         got.splitlines()
