@@ -17,7 +17,6 @@ Running this program also unit tests a sample.
 from difflib import unified_diff
 from os import path
 from sys import argv
-from re import compile, sub
 
 comment = '//'
 comment_begin = '/*'
@@ -99,6 +98,12 @@ package multiple_comments_on_one_line
       /**/ private var level:int /**/
       private function getLevel():int   
       {
+            var object:Object = {
+            };
+            var array:Array = [
+            ]
+            ;
+            object = {a: 1};
         return level;
       }
   }
@@ -115,6 +120,9 @@ package multiple_comments_on_one_line
         /**/ private var level:int /**/
         private function getLevel():int
         {
+            var object:Object = {};
+            var array:Array = [];
+            object = {a: 1};
             return level;
         }
     }
@@ -212,6 +220,7 @@ def format_text(text):
     >>> print format_difference(_test_indented_variables_expected, got)
     <BLANKLINE>
     """
+    ## text = _merge_empty_lines(text)
     lines = text.splitlines()
     is_comment = False
     indent_count = 0
@@ -249,6 +258,14 @@ def format_text(text):
             if comment_end in a_comment:
                 is_comment = False
     text = line_separator.join(formatted_lines)
+    return text
+
+
+def _merge_empty_lines(text):
+    text = '\n'.join([line.strip() for line in text.splitlines()])
+    for begin, end in zip(indent_begins, indent_ends):
+        text = text.replace(begin + '\n' + end, begin + end)
+    text = text.replace('\n' + ignore, ignore)
     return text
 
 
