@@ -88,8 +88,7 @@ var here;
 """
 
 
-_test_multiple_comments_on_one_line = """
-/** this */
+_test_multiple_comments_on_one_line = """/** this */
 package multiple_comments_on_one_line 
 {
   /**/ import flash.display.MovieClip /**/
@@ -104,14 +103,14 @@ package multiple_comments_on_one_line
             ]
             ;
             object = {a: 1};
+            var text:String = "{" + a + "}";
         return level;
       }
   }
 }
 """
 
-_test_multiple_comments_on_one_line_expected = """
-/** this */
+_test_multiple_comments_on_one_line_expected = """/** this */
 package multiple_comments_on_one_line
 {
     /**/ import flash.display.MovieClip /**/
@@ -123,6 +122,7 @@ package multiple_comments_on_one_line
             var object:Object = {};
             var array:Array = [];
             object = {a: 1};
+            var text:String = "{" + a + "}";
             return level;
         }
     }
@@ -152,6 +152,7 @@ package indented_variables
         1,
         2];
      public var level:int = 0;
+     public var text:String = "{" + level + "}";
   }
 }
 """
@@ -178,6 +179,7 @@ package indented_variables
             1,
             2];
         public var level:int = 0;
+        public var text:String = "{" + level + "}";
     }
 }
 """
@@ -220,7 +222,7 @@ def format_text(text):
     >>> print format_difference(_test_indented_variables_expected, got)
     <BLANKLINE>
     """
-    ## text = _merge_empty_lines(text)
+    text = _merge_empty_lines(text)
     lines = text.splitlines()
     is_comment = False
     indent_count = 0
@@ -271,14 +273,14 @@ def _merge_empty_lines(text):
 
 def format(text):
     """
-    >>> got = format_text(_test_multiple_comments_on_one_line) 
+    >>> got = format(_test_multiple_comments_on_one_line) 
     >>> print format_difference(_test_multiple_comments_on_one_line_expected, got)
     <BLANKLINE>
     """
     text = text.replace('\r\n', '\n').replace('\r', '\n')
-    text = newline_after_braces(text)
+    # text = newline_after_braces(text)
     text = format_text(text)
-    text = newline_after_braces(text)
+    # text = newline_after_braces(text)
     text = text.strip()
     return text
 
