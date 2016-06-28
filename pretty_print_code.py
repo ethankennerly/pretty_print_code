@@ -196,14 +196,14 @@ def format_difference(expected, got):
     return difference
 
 
-def newline_after_braces(text):
-    indents = [indent_begins[0], indent_ends[0]]
-    for indent in indents:
-        trimmed = indent + line_separator
-        redundant = indent + line_separator + line_separator
-        text = text.replace(indent, trimmed)
-        text = text.replace(redundant, trimmed)
-    return text
+def strip_and_remove_empty_lines(text):
+    lines = text.splitlines()
+    replaced_lines = []
+    for line in lines:
+        replaced = line.rstrip()
+        if replaced:
+            replaced_lines.append(replaced)
+    return '\n'.join(replaced_lines)
 
 
 def format_text(text):
@@ -273,14 +273,24 @@ def _merge_empty_lines(text):
 
 def format(text):
     """
-    >>> got = format(_test_multiple_comments_on_one_line) 
+    >>> got = format_text(_test_text) 
+    >>> print format_difference(_test_text_expected, got)
+    <BLANKLINE>
+
+    Multiple comments on one line.
+    >>> got = format_text(_test_multiple_comments_on_one_line) 
     >>> print format_difference(_test_multiple_comments_on_one_line_expected, got)
+    <BLANKLINE>
+
+    Indented variables.
+    >>> got = format_text(_test_indented_variables) 
+    >>> print format_difference(_test_indented_variables_expected, got)
     <BLANKLINE>
     """
     text = text.replace('\r\n', '\n').replace('\r', '\n')
-    # text = newline_after_braces(text)
+    text = strip_and_remove_empty_lines(text)
     text = format_text(text)
-    # text = newline_after_braces(text)
+    text = strip_and_remove_empty_lines(text)
     text = text.strip()
     return text
 
